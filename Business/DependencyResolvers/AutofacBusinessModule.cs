@@ -50,6 +50,9 @@ namespace Business.DependencyResolvers.Autofac
             builder.RegisterType<FileHelperManager>().As<IFileHelper>().SingleInstance();
 
 
+
+            builder.RegisterType<PaymentManager>().As<IPaymentService>().SingleInstance();
+
             // --- AOP (Aspect Oriented Programming) ---
             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 

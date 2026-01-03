@@ -61,6 +61,10 @@ namespace Business.Concrete
         public async Task<IDataResult<Car>> GetByIdAsync(int carId)
         {
             var data = await _carDal.GetAsync(c => c.CarId == carId);
+            if (data == null)
+            {
+                return new ErrorDataResult<Car>("Araba bulunamadı.");
+            }
             return new SuccesDataResult<Car>(data);
         }
 

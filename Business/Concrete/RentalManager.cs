@@ -1,12 +1,14 @@
 ﻿using Business.Abstract;
 using Business.Constants;
-using Business.Rules; // Eğer Rules kullanıyorsan
+using Business.Rules;
 using Core.Aspects.Autofac.Transaction;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Entities.DTOs;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Business.Concrete
@@ -14,33 +16,34 @@ namespace Business.Concrete
     public class RentalManager : IRentalService
     {
         private readonly IRentalDal _rentalDal;
-        private readonly ICarService _carService; // Transaction için gerekli
-        private readonly RentalBusinessRules _rules; 
+        private readonly ICarService _carService;
+        private readonly RentalBusinessRules _rules;
+        private readonly IPaymentService _paymentService;
 
-        public RentalManager(IRentalDal rentalDal, ICarService carService, RentalBusinessRules rules    )
+        public RentalManager(IRentalDal rentalDal, ICarService carService, RentalBusinessRules rules, IPaymentService paymentservice)
         {
             _rentalDal = rentalDal;
             _carService = carService;
             _rules = rules;
+            _paymentService = paymentservice;
         }
-
-        // --- STANDART CRUD İŞLEMLERİ (EKSİK OLANLAR) ---
 
         public async Task<IDataResult<List<Rental>>> GetAllAsync()
         {
             var result = await _rentalDal.GetAllAsync();
+            // Not: Core katmanında sınıfın adı 'Succes' ise burayı ona göre güncelle
             return new SuccesDataResult<List<Rental>>(result, "Kiralama kayıtları listelendi.");
         }
 
         public async Task<IDataResult<Rental>> GetByIdAsync(int rentalId)
         {
+            // DÜZELTİLDİ: r.Id yerine r.RentalId kullanıldı
             var result = await _rentalDal.GetAsync(r => r.RentalId == rentalId);
             return new SuccesDataResult<Rental>(result);
         }
 
         public async Task<IResult> AddAsync(Rental rental)
         {
-            // İstersen burada da kurallar çalıştırabilirsin
             await _rentalDal.AddAsync(rental);
             return new SuccessResult("Kiralama kaydı eklendi.");
         }
@@ -57,40 +60,41 @@ namespace Business.Concrete
             return new SuccessResult("Kiralama kaydı silindi.");
         }
 
-        // --- TRANSACTION İÇEREN ÖZEL METOT ---
-
         [TransactionScopeAspect]
-        // 3. METOT GÜNCELLENDİ
-        public async Task<IResult> RentCarAsync(Rental rental)
+        public async Task<IDataResult<RentalInvoiceDto>> RentCarAsync(Rental rental)
         {
-            // --- KURAL KONTROLÜ BAŞLIYOR ---
-            // "Git bakalım, bu tarihlerde bu araba müsait mi?"
             var ruleResult = await _rules.CheckIfCarIsAvailable(rental.CarId, rental.RentDate, rental.RentEndDate);
-
-            // Eğer kuraldan hata döndüyse (Success == false), işlemi durdur ve hatayı kullanıcıya göster.
             if (!ruleResult.Success)
             {
-                return ruleResult; // "Araç istenen tarihlerde doludur" mesajı döner.
+                return new ErrorDataResult<RentalInvoiceDto>(ruleResult.Message);
             }
-            // --- KURAL KONTROLÜ BİTTİ ---
 
+            var carResult = await _carService.GetByIdAsync(rental.CarId);
+            if (!carResult.Success)
+            {
+                return new ErrorDataResult<RentalInvoiceDto>("Araba bilgisi bulunamadı.");
+            }
+            var car = carResult.Data;
 
-            // Eğer buraya geldiyse araç boştur, kiralamayı yapabiliriz.
+            int totalDays = (rental.RentEndDate - rental.RentDate).Days;
+            if (totalDays <= 0) totalDays = 1;
+            decimal totalPrice = totalDays * car.DailyPrice;
+
+            var paymentResult = _paymentService.Pay(totalPrice);
+            if (!paymentResult.Success)
+            {
+                return new ErrorDataResult<RentalInvoiceDto>("Ödeme reddedildi. Bakiye yetersiz.");
+            }
+
             await _rentalDal.AddAsync(rental);
 
-            // ... (Geri kalan kodların aynı kalabilir) ...
+            car.Description += " - KİRALANDI";
+            await _carService.UpdateAsync(car);
 
-            // Arabayı bul ve açıklamasını güncelle (Senin eski kodun)
-            // Not: Bu kısım opsiyoneldir, her kiralamada description güncellemek şart değil ama sen istediğin için kalsın.
-            var carResult = await _carService.GetByIdAsync(rental.CarId);
-            if (carResult.Success)
-            {
-                var car = carResult.Data;
-                car.Description += " - KİRALANDI";
-                await _carService.UpdateAsync(car);
-            }
+            var invoiceResult = await _rentalDal.GetRentalDetailsAsync(r => r.RentalId == rental.RentalId);
+            var invoice = invoiceResult.FirstOrDefault();
 
-            return new SuccessResult("Kiralama işlemi başarıyla tamamlandı.");
+            return new SuccesDataResult<RentalInvoiceDto>(invoice, $"Ödeme alındı, kiralama işlemi tamamlandı. RentalId: {rental.RentalId}");
         }
     }
 }

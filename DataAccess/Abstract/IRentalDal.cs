@@ -1,5 +1,7 @@
-﻿using Core.DataAccess;
+﻿using System.Linq.Expressions;
+using Core.DataAccess;
 using Entities.Concrete;
+using Entities.DTOs;
 
 namespace DataAccess.Abstract
 {
@@ -7,5 +9,9 @@ namespace DataAccess.Abstract
     public interface IRentalDal : IEntityRepository<Rental>
     {
         // Buraya Rental tablosuna özel (Join vb.) metodlar gelirse ekleyebiliriz.
+
+
+        Task<List<RentalInvoiceDto>> GetRentalDetailsAsync(Expression<Func<Rental, bool>> filter = null);
     }
+
 }

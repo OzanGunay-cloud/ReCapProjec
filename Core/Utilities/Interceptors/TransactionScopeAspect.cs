@@ -1,6 +1,7 @@
 ﻿using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
 using System.Transactions;
+using System.Threading.Tasks; // Bunu eklemeyi unutma
 
 namespace Core.Aspects.Autofac.Transaction
 {
@@ -8,22 +9,27 @@ namespace Core.Aspects.Autofac.Transaction
     {
         public override void Intercept(IInvocation invocation)
         {
-            // TransactionScope, içindeki tüm işlemler bitene kadar hiçbirini veritabanına kalıcı yazmaz.
-            using (TransactionScope transactionScope = new TransactionScope())
+            using (TransactionScope transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
                 try
                 {
-                    // Metodu çalıştır (Örn: AddAsync veya Rental işlemi)
                     invocation.Proceed();
 
-                    // Eğer hata çıkmadıysa tüm işlemleri onayla (Commit)
+                    // --- KRİTİK DÜZELTME BURASI ---
+                    // Eğer çalıştırılan metot asenkron (Task) ise, metodun bitmesini bekle!
+                    if (invocation.ReturnValue is Task task)
+                    {
+                        // Task bitene kadar Scope'un kapanmasını engelliyoruz
+                        task.GetAwaiter().GetResult();
+                    }
+                    // ------------------------------
+
                     transactionScope.Complete();
                 }
-                catch (System.Exception e)
+                catch (System.Exception)
                 {
-                    // Hata çıkarsa her şeyi geri al (Rollback)
                     transactionScope.Dispose();
-                    throw; // Hatayı yukarı fırlat ki Middleware yakalasın
+                    throw;
                 }
             }
         }
