@@ -1,54 +1,45 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using DataAccess.Abstract;
 using Core.Utilities.Results;
-using System.Linq; // Bunu mutlaka ekle!
-using Business.Constants;
+using Business.Abstract; // ICarService için gerekli
 
 namespace Business.Rules
 {
     public class RentalBusinessRules
     {
         private readonly IRentalDal _rentalDal;
+        private readonly ICarService _carService; // CarService'i buraya ekledik
 
-        public RentalBusinessRules(IRentalDal rentalDal)
+        public RentalBusinessRules(IRentalDal rentalDal, ICarService carService)
         {
             _rentalDal = rentalDal;
+            _carService = carService; // Constructor'da enjekte ettik
         }
-
 
         public async Task<IResult> CheckIfCarIsAvailable(int carId, DateTime rentDate, DateTime rentEndDate)
         {
-            // AnyAsync yoksa GetAsync ile kontrol et
+            // 1. ADIM: İsim uyuşmazlığı giderildi (GetByIdAsync) ve await eklendi.
+            var carResult = await _carService.GetByIdAsync(carId);
+
+            if (!carResult.Success || carResult.Data == null || !carResult.Data.IsAvailable)
+            {
+                return new ErrorResult("Bu araç şu an kiralanabilir durumda değil (Bakımda veya Pasif)!");
+            }
+
+            // 2. ADIM: Tarih Çakışması Kontrolü
             var conflict = await _rentalDal.GetAsync(r =>
                 r.CarId == carId &&
-                r.ReturnDate == null && // Araba henüz dönmemişse
-                (
-                    // Çakışma mantığı
-                    r.RentDate < rentEndDate &&
-                    r.RentEndDate > rentDate
-                )
+                r.ReturnDate == null &&
+                (rentDate < r.RentEndDate && rentEndDate > r.RentDate)
             );
 
             if (conflict != null)
             {
-                // Exception fırlatma, ErrorResult dön!
-                return new ErrorResult("Araç istenen tarihlerde doludur.");
+                return new ErrorResult("Araç seçilen tarihler arasında zaten kiralanmış.");
             }
 
-            // Sorun yoksa SuccessResult dön 
-            return new SuccessResult();   // bunun içinde exception dönemezsin business rules çünkü result yapısıyla çalışır 
+            return new SuccessResult();
         }
-
-
-
     }
-
-
-
-    }
-
-
+}

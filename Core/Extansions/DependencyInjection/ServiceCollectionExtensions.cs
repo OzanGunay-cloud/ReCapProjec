@@ -1,4 +1,4 @@
-﻿using Core.Utilities.IoC;
+using Core.Utilities.IoC;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Core.Extensions.DependencyInjection
@@ -10,7 +10,7 @@ namespace Core.Extensions.DependencyInjection
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// Projedeki tüm bağımlılık çözuçülerini (modülleri) sisteme ekler ve ServiceTool'u yapılandırır.
+        /// Projedeki tüm bağımlılık çözücülerini (modülleri) sisteme ekler ve ServiceTool'u yapılandırır.
         /// </summary>
         /// <param name="serviceCollection">.NET'in sunduğu merkezi servis koleksiyonu (sepet).</param>
         /// <param name="modules">Sisteme eklenecek olan modüllerin listesi (CoreModule, WebModule vb.).</param>
