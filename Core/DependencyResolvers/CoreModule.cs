@@ -1,5 +1,3 @@
-﻿using Core.CrossCuttingConcerns.Caching.Microsoft;
-using Core.CrossCuttingConcerns.Caching;
 using Core.Utilities.IoC;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,14 +10,8 @@ namespace Core.DependencyResolvers
         {
             // Kullanıcı bilgilerini (Token, Claims) okuyabilmek için HttpContext'e her yerden erişim sağlıyoruz
             serviceCollection.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            serviceCollection.AddMemoryCache(); // .NET'in kendi cache servisi
-           
-            serviceCollection.AddSingleton<ICacheManager, MemoryCacheManager>(); // Bizim yazdığımız manager
+            
             // İleride buraya MemoryCache, Redis veya farklı altyapı servislerini de tek satırla ekleyebileceğiz.
         }
     }
-
-
 }
-
-
