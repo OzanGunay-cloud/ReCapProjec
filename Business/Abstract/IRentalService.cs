@@ -8,11 +8,11 @@ namespace Business.Abstract
 {
     public interface IRentalService
     {
-
-
         Task<IDataResult<List<Rental>>> GetAllAsync();
-
-        // Transaction test edeceğimiz ve gerçek iş mantığını yürüteceğimiz özel metot
-      Task<IDataResult<RentalInvoiceDto>> RentCarAsync(Rental rental);
+        Task<IDataResult<Rental>> GetByIdAsync(int rentalId); // Hata veren metot 1
+        Task<IResult> AddAsync(Rental rental);               // Hata veren metot 2
+        Task<IResult> UpdateAsync(Rental rental);            // Hata veren metot 3
+        Task<IResult> DeleteAsync(Rental rental);            // Hata veren metot 4
+        Task<IDataResult<RentalInvoiceDto>> RentCarAsync(Rental rental);
     }
 }

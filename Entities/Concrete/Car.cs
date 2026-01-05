@@ -11,5 +11,9 @@ namespace Entities.Concrete
         public int ModelYear { get; set; }
         public decimal DailyPrice { get; set; }
         public string Description { get; set; }
+
+        // Değeri doğrudan true olarak başlatıyoruz
+        public bool IsAvailable { get; set; } = true;
+
     }
 }

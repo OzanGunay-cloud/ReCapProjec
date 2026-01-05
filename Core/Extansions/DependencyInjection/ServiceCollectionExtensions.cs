@@ -23,6 +23,7 @@ namespace Core.Extensions.DependencyInjection
                 // Her bir modülün içindeki Load metodunu tetikliyoruz.
                 // Bu sayede modül içindeki servisler (örneğin IHttpContextAccessor) sepete ekleniyor.
                 module.Load(serviceCollection);
+                //Döngü (foreach), modül sayısına göre döner, modülün içindeki servis sayısına göre değil. tek döngüde birden fazla kayıt
             }
 
             // 2. ADIM: İşte en kritik nokta! 
@@ -33,3 +34,9 @@ namespace Core.Extensions.DependencyInjection
         }
     }
 }
+
+
+
+
+
+
