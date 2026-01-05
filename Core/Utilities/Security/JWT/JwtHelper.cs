@@ -17,9 +17,11 @@ namespace Core.Utilities.Security.JWT // Eksik olan en kritik satır!
         public IConfiguration Configuration { get; }
         private TokenOptions _tokenOptions;
 
-        public JwtHelper(IConfiguration configuration)
+        public JwtHelper(IConfiguration configuration) // 1. İstek: "Bana ayarları getir"
         {
-            Configuration = configuration;
+            Configuration = configuration; // 2. Atama: "Gelen ayarları sınıf içindeki değişkene aktar"
+
+            // 3. Kullanım: "Aktardığım ayarlardan sadece TokenOptions kısmını ayıkla ve nesneye dönüştür"
             _tokenOptions = Configuration.GetSection("TokenOptions").Get<TokenOptions>();
         }
 
@@ -52,7 +54,8 @@ namespace Core.Utilities.Security.JWT // Eksik olan en kritik satır!
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
             };
 
-            claims.AddRange(operationClaims.Select(oc => new Claim(ClaimTypes.Role, oc.Name)));
+            claims.AddRange(operationClaims.Select(oc => new Claim(ClaimTypes.Role, oc.Name))); // burada new claim diyerek nesne olusturuyoruz select ile
+                                                                                               //değişken olan bu parçayıda sorgudan geçirip liste sonuna ekliyruoz
             return claims;
         }
     }

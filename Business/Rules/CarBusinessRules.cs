@@ -9,7 +9,14 @@ namespace Business.Rules // İsim alanı değişti
     public class CarBusinessRules
     {
         private readonly ICarDal _carDal;
+   /*CarManager (Servis), iş kurallarını kontrol etmek için CarBusinessRules'u kullanır.
 
+Eğer CarBusinessRules da ICarService'i kullanmaya çalışırsa; Servis ->
+        Rules -> Servis şeklinde bir döngü oluşur ve uygulama ayağa kalkarken hata verir.
+         
+         */
+
+     
         public CarBusinessRules(ICarDal carDal)
         {
             _carDal = carDal;
