@@ -1,4 +1,5 @@
 ﻿using Business.Abstract;
+using Business.BusinessAspects.Autofac;
 using Business.Constants;
 using Business.Rules;
 using Business.ValidationRules.FluentValidation;
@@ -28,6 +29,7 @@ namespace Business.Concrete
             _rules = rules;
         }
 
+        [SecuredOperation("admin,car.add")]
         [ValidationAspect(typeof(CarValidator))]
         public async Task<IResult> AddAsync(Car car)
         {
