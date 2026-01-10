@@ -3,7 +3,7 @@
 Bu branch, veritabanı üzerindeki yükü azaltmak ve kiralama mantığını gerçek hayat senaryolarına (tarih çakışması, araç müsaitliği vb.) uygun hale getirmek için kritik bir adımdır.
 
 
-🚀 Eklenen Özellikler
+Eklenen Özellikler
 1. Caching (Önbellekleme) Altyapısı
 Sık kullanılan verilerin her defasında veritabanından çekilmesi yerine bellekte (RAM) tutulmasını sağlayan yapı kuruldu.
 
