@@ -29,29 +29,32 @@ namespace Core.Utilities.Security.JWT // Eksik olan en kritik satır!
         {
             var securityKey = SecurityKeyHelper.CreateSecurityKey(_tokenOptions.SecurityKey);
             var signingCredentials = SigningCredentialsHelper.CreateSigningCredentials(securityKey);
+            var sessionId = Guid.NewGuid().ToString("N");
 
             var jwtToken = new JwtSecurityToken(
                 issuer: _tokenOptions.Issuer,
                 audience: _tokenOptions.Audience,
                 expires: DateTime.Now.AddMinutes(_tokenOptions.AccessTokenExpiration),
                 signingCredentials: signingCredentials,
-                claims: SetClaims(user, operationClaims)
+                claims: SetClaims(user, operationClaims, sessionId)
             );
 
             return new AccessToken
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
-                Expiration = jwtToken.ValidTo
+                Expiration = jwtToken.ValidTo,
+                SessionId = sessionId
             };
         }
 
-        private IEnumerable<Claim> SetClaims(User user, List<OperationClaim> operationClaims)
+        private IEnumerable<Claim> SetClaims(User user, List<OperationClaim> operationClaims, string sessionId)
         {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, sessionId)
             };
 
             claims.AddRange(operationClaims.Select(oc => new Claim(ClaimTypes.Role, oc.Name))); // burada new claim diyerek nesne olusturuyoruz select ile
