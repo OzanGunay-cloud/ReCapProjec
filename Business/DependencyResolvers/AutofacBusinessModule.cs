@@ -58,8 +58,10 @@ namespace Business.DependencyResolvers.Autofac
             builder.RegisterType<UserManager>().As<IUserService>().SingleInstance();
             builder.RegisterType<EfUserDal>().As<IUserDal>().SingleInstance();
 
-            // Auth Servisleri
-            builder.RegisterType<AuthManager>().As<IAuthService>().SingleInstance();
+            // AuthManager'ı Scoped (İstek başına bir tane) yapıyoruz
+            builder.RegisterType<AuthManager>().As<IAuthService>().InstancePerLifetimeScope();
+
+            // JwtHelper'ı Singleton (Uygulama boyu bir tane) bırakabiliriz
             builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
 
 

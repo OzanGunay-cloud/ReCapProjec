@@ -1,14 +1,18 @@
-using Autofac;
+ï»¿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Business.DependencyResolvers.Autofac;
 using Core.DependencyResolvers;
 using Core.Extensions.DependencyInjection;
 using Core.Utilities.IoC;
-using Core.Utilities.Security.Encryption; // SecurityKeyHelper için gerekli
-using Core.Utilities.Security.JWT; // TokenOptions için gerekli
-using Microsoft.AspNetCore.Authentication.JwtBearer; // Bu namespace þart
-using Microsoft.IdentityModel.Tokens; // TokenValidationParameters için þart
+using Core.Utilities.Security.Encryption; // SecurityKeyHelper iÃ§in gerekli
+using Core.Utilities.Security.JWT; // TokenOptions iÃ§in gerekli
+using Microsoft.AspNetCore.Authentication.JwtBearer; // Bu namespace ÅŸart
+using Microsoft.IdentityModel.Tokens; // TokenValidationParameters iÃ§in ÅŸart
 using Microsoft.OpenApi.Models;
+using SessionSentinel.WebApi;
+using WebAPI.Options;
+using WebAPI.Services;
+using WebAPI.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,14 +25,15 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
 
 builder.Services.AddControllers();
 
-// --- 2. CORE KATMANI MODÜLLERÝ ---
+// --- 2. CORE KATMANI MODÃœLLERÄ° ---
 builder.Services.AddDependencyResolvers(new ICoreModule[] {
     new CoreModule()
 });
 
-// --- 3. JWT DOÐRULAMA AYARLARI (EKSÝK OLAN KISIM BURASIYDI) ---
-// appsettings.json dosyasýndaki ayarlarý okuyoruz
-var tokenOptions = builder.Configuration.GetSection("TokenOptions").Get<TokenOptions>();
+// --- 3. JWT DOÄžRULAMA AYARLARI (EKSÄ°K OLAN KISIM BURASIYDI) ---
+// appsettings.json dosyasÄ±ndaki ayarlarÄ± okuyoruz.
+var tokenOptions = builder.Configuration.GetSection("TokenOptions").Get<TokenOptions>()
+    ?? throw new InvalidOperationException("TokenOptions configuration is missing.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -45,6 +50,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 // ----------------------------------------------------------------
+builder.Services.AddAuthorization();
+builder.Services.AddSessionSentinel(options =>
+{
+    // Session-Sentinel ayarlarÄ±nÄ± uygulama config'inden alÄ±yoruz.
+    builder.Configuration.GetSection("SessionSentinel").Bind(options);
+});
+builder.Services.Configure<LoginChallengeOptions>(
+    builder.Configuration.GetSection(LoginChallengeOptions.SectionName));
+builder.Services.AddSingleton<ILoginChallengeStore, MemoryLoginChallengeStore>();
+builder.Services.AddSingleton<ILoginChallengeEmailSender, LoginChallengeEmailSender>();
+builder.Services.AddScoped<ILoginChallengeService, LoginChallengeService>();
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -74,6 +90,7 @@ builder.Services.AddSwaggerGen(opt =>
             new string[] {}
         }
     });
+    opt.OperationFilter<FingerprintHeaderOperationFilter>();
 });
 
 var app = builder.Build();
@@ -89,10 +106,12 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// --- 5. KÝMLÝK DOÐRULAMA & YETKÝLENDÝRME ---
+// --- 5. KÄ°MLÄ°K DOÄžRULAMA & YETKÄ°LENDÄ°RME ---
 app.UseAuthentication();
+app.UseSessionSentinel();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapSessionSentinelHub();
 
 app.Run();
