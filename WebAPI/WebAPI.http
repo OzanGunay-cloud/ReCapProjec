@@ -1,6 +1,32 @@
 @WebAPI_HostAddress = http://localhost:5241
+@Fingerprint = recap-postman-fingerprint
+@Token = paste-token-here
 
-GET {{WebAPI_HostAddress}}/weatherforecast/
+POST {{WebAPI_HostAddress}}/api/auth/login
+Content-Type: application/json
+X-Sentinel-Fingerprint: {{Fingerprint}}
+
+{
+  "email": "admin@recap.com",
+  "password": "12345"
+}
+
+###
+
+GET {{WebAPI_HostAddress}}/api/session-sentinel-demo/me
+Authorization: Bearer {{Token}}
+X-Sentinel-Fingerprint: {{Fingerprint}}
 Accept: application/json
+
+###
+
+POST {{WebAPI_HostAddress}}/api/auth/logout
+Authorization: Bearer {{Token}}
+X-Sentinel-Fingerprint: {{Fingerprint}}
+Content-Type: application/json
+
+{
+  "reason": "Manual logout"
+}
 
 ###
